@@ -15,7 +15,8 @@ const generateAccessAndRefreshTokens = async(userId)=>{
         return { accessToken, refreshToken }
 
     } catch (error) {
-        return res.status(500).json({message: "Token Generation failed"})
+        // throw an error instead, let the caller handle it
+        throw new Error("Token Generation failed")
     }
 }
 
@@ -273,3 +274,4 @@ export {
     updateAccountDetails
 
 }
+
