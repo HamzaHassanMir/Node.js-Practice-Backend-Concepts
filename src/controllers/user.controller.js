@@ -37,7 +37,8 @@ const registerUser = asyncHandler(async (req,res) =>{
         return res.status(400).json({message: "All fields are required"})
     }
 
-    const existedUser = User.findOne({
+    // Missing await on findOne
+    const existedUser = await User.findOne({
         $or: [{ username }, { email }]
     })
 
@@ -94,7 +95,8 @@ const loginUser = asyncHandler(async(req,res)=>{
     
     const {email, username, password} = req.body
 
-    if(!username || !email){
+    // Wrong validation logic -  This blocks login if EITHER is missing, but should block if BOTH are missing
+    if(!username && !email){
         return res.status(400).json({message: "username or password is required"})
     }
 
@@ -121,11 +123,11 @@ const loginUser = asyncHandler(async(req,res)=>{
         secure: true
     }
 
+    // removed duplicate status(200)
     return res
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .status(200)
     .json({
         data: {
             user: loggedInUser, accessToken, refreshToken
@@ -173,9 +175,11 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
         process.env.REFRESH_TOKEN_SECRET)
         
         const user = await User.findById(decodedToken?._id)
-        
+
+        // The if(!user) block is never closed missing } 
         if(!user){
         return res.status(401).json({message: "Invalid refresh token"})
+        }
 
         if(incomingRefreshToken !== user?.refreshToken){
             return res.status(401).json({message: "Refresh Token is expired or used"})
@@ -212,6 +216,7 @@ const changeCurrentPassword = asyncHandler(async(req,res)=>{
     const user = await User.findById(req.user?._id);
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
+    // Missing return on error response - Execution continues after this since there's no return
     if(!isPasswordCorrect){
         res.status(400).json({message: "Invalid old password"})
     }
@@ -241,8 +246,9 @@ const updateAccountDetails = asyncHandler(async(req,res)=>{
     if(!fullname || !email){
         return res.status(400).json({message: "all fields are required"})
     }
- 
-    const user = User.findByIdAndUpdate(
+
+    // Missing await - user will be a Query object, not the actual updated document
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
@@ -274,4 +280,5 @@ export {
     updateAccountDetails
 
 }
+
 
